@@ -36,7 +36,7 @@ jobs:
             xvfb dbus-x11 xclip fonts-noto-cjk \
             ${{ matrix.extra_pkgs }}
       - name: Build and run unit tests
-        run: cargo test --release
+        run: cargo build --release --locked && cargo test --release --locked
       - name: Run self-test & GUI smoke tests under ${{ matrix.de_name }}
         env:
           XDG_CURRENT_DESKTOP: ${{ matrix.xdg_desktop }}
@@ -60,7 +60,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Build and run unit tests on macOS
-        run: cargo test --release
+        run: cargo build --release --locked && cargo test --release --locked
       - name: Run self-test & GUI smoke tests on macOS
         run: |
           ./target/release/qrcode-viewer --self-test
@@ -76,7 +76,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Build and run unit tests on Windows
-        run: cargo test --release
+        run: cargo build --release --locked && cargo test --release --locked
       - name: Run self-test & GUI smoke tests on Windows
         shell: bash
         run: |
