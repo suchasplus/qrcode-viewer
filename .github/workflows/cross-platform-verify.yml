@@ -1,0 +1,86 @@
+name: Cross-Platform & Desktop Environment Verification
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify-linux-gtk-kde:
+    name: Linux (${{ matrix.de_name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - de_name: "GTK / GNOME"
+            xdg_desktop: "GNOME"
+            extra_pkgs: "openbox xdg-desktop-portal xdg-desktop-portal-gtk zenity libgtk-3-0"
+            wm_cmd: "openbox &"
+          - de_name: "KDE Plasma"
+            xdg_desktop: "KDE"
+            extra_pkgs: "kwin-x11 xdg-desktop-portal xdg-desktop-portal-kde kdialog"
+            wm_cmd: "kwin_x11 &"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install V4L2, X11/Wayland, and ${{ matrix.de_name }} dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libv4l-dev clang libclang-dev pkg-config \
+            libxkbcommon-dev libxkbcommon-x11-dev libwayland-dev \
+            libgl1-mesa-dev libegl1-mesa-dev \
+            xvfb dbus-x11 xclip fonts-noto-cjk \
+            ${{ matrix.extra_pkgs }}
+      - name: Build and run unit tests
+        run: cargo test --release
+      - name: Run self-test & GUI smoke tests under ${{ matrix.de_name }}
+        env:
+          XDG_CURRENT_DESKTOP: ${{ matrix.xdg_desktop }}
+          WINIT_UNIX_BACKEND: x11
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          xvfb-run -a -s "-screen 0 1280x800x24" dbus-run-session -- bash -c '
+            ${{ matrix.wm_cmd }}
+            sleep 1
+            ./target/release/qrcode-viewer --self-test
+            ./target/release/qrcode-viewer --test-scene --auto-exit 1.5
+            ./target/release/qrcode-viewer --simulate-no-camera --auto-exit 1.2
+            ./target/release/qrcode-viewer --simulate-busy-camera --auto-exit 1.2
+          '
+
+  verify-macos:
+    name: macOS (AVFoundation + Cocoa)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build and run unit tests on macOS
+        run: cargo test --release
+      - name: Run self-test & GUI smoke tests on macOS
+        run: |
+          ./target/release/qrcode-viewer --self-test
+          ./target/release/qrcode-viewer --test-scene --auto-exit 1.5
+          ./target/release/qrcode-viewer --simulate-no-camera --auto-exit 1.2
+          ./target/release/qrcode-viewer --simulate-busy-camera --auto-exit 1.2
+
+  verify-windows:
+    name: Windows (MediaFoundation + Win32)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build and run unit tests on Windows
+        run: cargo test --release
+      - name: Run self-test & GUI smoke tests on Windows
+        shell: bash
+        run: |
+          ./target/release/qrcode-viewer.exe --self-test
+          ./target/release/qrcode-viewer.exe --test-scene --auto-exit 1.5
+          ./target/release/qrcode-viewer.exe --simulate-no-camera --auto-exit 1.2
+          ./target/release/qrcode-viewer.exe --simulate-busy-camera --auto-exit 1.2

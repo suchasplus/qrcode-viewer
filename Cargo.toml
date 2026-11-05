@@ -1,0 +1,37 @@
+[package]
+name = "qrcode-viewer"
+version = "0.2.0"
+edition = "2021"
+description = "Cross-platform desktop QR code camera viewer and largest-QR decoder"
+authors = ["suchasplus <suchasplus@gmail.com>"]
+
+[dependencies]
+arboard = { version = "3.4", features = ["wayland-data-control"] }
+chrono = { version = "0.4", features = ["serde"] }
+dirs = "6.0"
+eframe = { version = "0.31", default-features = false, features = [
+    "default_fonts",
+    "glow",
+    "wayland",
+    "x11",
+] }
+egui = "0.31"
+image = { version = "0.25", default-features = false, features = [
+    "png",
+    "jpeg",
+    "bmp",
+    "webp",
+] }
+nokhwa = { version = "0.10", default-features = false, features = ["input-native"] }
+qrcode = "0.14"
+rfd = "0.15"
+rqrr = "0.9"
+rxing = { version = "0.7", default-features = false }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.dev]
+opt-level = 2
+
+[profile.dev.package."*"]
+opt-level = 3
