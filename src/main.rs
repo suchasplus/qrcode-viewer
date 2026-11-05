@@ -164,7 +164,14 @@ fn main() -> eframe::Result<()> {
         return Ok(());
     }
 
-    let native_options = eframe::NativeOptions {
+    let primary_renderer = if cfg!(target_os = "windows") {
+        eframe::Renderer::Wgpu
+    } else {
+        eframe::Renderer::Glow
+    };
+
+    let make_options = |renderer: eframe::Renderer| eframe::NativeOptions {
+        renderer,
         viewport: egui::ViewportBuilder::default()
             .with_title("QRCode Viewer · 最大二维码实时检测与解析 (Rust)")
             .with_inner_size([1280.0, 780.0])
@@ -181,11 +188,25 @@ fn main() -> eframe::Result<()> {
         auto_exit_seconds,
     };
 
-    eframe::run_native(
+    let opts_first = launch_opts.clone();
+    let res = eframe::run_native(
         "qrcode-viewer",
-        native_options,
-        Box::new(move |cc| Ok(Box::new(QRCodeViewerApp::new(cc, launch_opts)))),
-    )
+        make_options(primary_renderer),
+        Box::new(move |cc| Ok(Box::new(QRCodeViewerApp::new(cc, opts_first)))),
+    );
+    if res.is_err() {
+        let fallback_renderer = if primary_renderer == eframe::Renderer::Wgpu {
+            eframe::Renderer::Glow
+        } else {
+            eframe::Renderer::Wgpu
+        };
+        return eframe::run_native(
+            "qrcode-viewer",
+            make_options(fallback_renderer),
+            Box::new(move |cc| Ok(Box::new(QRCodeViewerApp::new(cc, launch_opts)))),
+        );
+    }
+    res
 }
 
 #[cfg(test)]

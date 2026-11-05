@@ -28,6 +28,7 @@ pub enum InputSourceMode {
     LocalImageFile(String),
 }
 
+#[derive(Debug, Clone)]
 pub struct AppLaunchOptions {
     pub initial_camera: u32,
     pub start_in_test_scene: bool,
